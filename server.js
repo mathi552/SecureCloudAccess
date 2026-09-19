@@ -13,12 +13,11 @@ const {
 
 const app = express();
 
-const PORT = 3000;
-const HOST = "127.0.0.1";
+const PORT = process.env.PORT || 3000;
+const HOST = "0.0.0.0";
 
 const BUCKET_NAME = "prm-secure-cloud-storage";
 const AWS_REGION = "eu-north-1";
-
 
 // ========================================
 // AWS S3
@@ -27,7 +26,6 @@ const AWS_REGION = "eu-north-1";
 const s3 = new S3Client({
     region: AWS_REGION
 });
-
 
 // ========================================
 // MIDDLEWARE
@@ -38,7 +36,6 @@ app.use(express.urlencoded({
 }));
 
 app.use(express.json());
-
 
 // ========================================
 // SESSION
@@ -58,7 +55,6 @@ app.use(
     })
 );
 
-
 // ========================================
 // MULTER
 // ========================================
@@ -66,7 +62,6 @@ app.use(
 const upload = multer({
     storage: multer.memoryStorage()
 });
-
 
 // ========================================
 // USERS
@@ -81,29 +76,24 @@ let users = [
     }
 ];
 
-
 // ========================================
 // ACTIVITY LOG
 // ========================================
 
 let activities = [];
 
-
 // ========================================
 // ACTIVITY HELPER
 // ========================================
 
 function addActivity(username, action, details = "") {
-
     activities.unshift({
         username: username,
         action: action,
         details: details,
         time: new Date().toISOString()
     });
-
 }
-
 
 // ========================================
 // LOGIN
@@ -130,9 +120,7 @@ app.post("/login", (req, res) => {
             success: false,
             message: "Invalid username or password."
         });
-
     }
-
 
     if (user.status !== "approved") {
 
@@ -141,22 +129,18 @@ app.post("/login", (req, res) => {
             message:
                 "Your account is waiting for admin approval."
         });
-
     }
-
 
     req.session.user = {
         username: user.username,
         role: user.role
     };
 
-
     addActivity(
         user.username,
         "User Login",
         "User logged into the system."
     );
-
 
     req.session.save(error => {
 
@@ -171,26 +155,20 @@ app.post("/login", (req, res) => {
                 success: false,
                 message: "Unable to create session."
             });
-
         }
-
 
         console.log(
             "SESSION CREATED:",
             req.session.user
         );
 
-
         res.json({
             success: true,
             username: user.username,
             role: user.role
         });
-
     });
-
 });
-
 
 // ========================================
 // REGISTER
@@ -201,7 +179,6 @@ app.post("/register", (req, res) => {
     const username = req.body.username;
     const password = req.body.password;
 
-
     if (!username || !password) {
 
         return res.status(400).json({
@@ -209,14 +186,11 @@ app.post("/register", (req, res) => {
             message:
                 "Username and password are required."
         });
-
     }
-
 
     const existingUser = users.find(
         item => item.username === username
     );
-
 
     if (existingUser) {
 
@@ -225,9 +199,7 @@ app.post("/register", (req, res) => {
             message:
                 "Username already exists."
         });
-
     }
-
 
     users.push({
         username: username,
@@ -236,22 +208,18 @@ app.post("/register", (req, res) => {
         status: "pending"
     });
 
-
     addActivity(
         username,
         "Registration Request",
         "New user requested access."
     );
 
-
     res.json({
         success: true,
         message:
             "Registration submitted. Please wait for admin approval."
     });
-
 });
-
 
 // ========================================
 // LOGIN CHECK
@@ -260,13 +228,11 @@ app.post("/register", (req, res) => {
 function requireLogin(req, res, next) {
 
     if (!req.session.user) {
-
         return res.redirect("/");
     }
 
     next();
 }
-
 
 // ========================================
 // ADMIN CHECK
@@ -283,12 +249,10 @@ function requireAdmin(req, res, next) {
             success: false,
             message: "Admin access required."
         });
-
     }
 
     next();
 }
-
 
 // ========================================
 // CURRENT USER
@@ -301,24 +265,19 @@ app.get("/current-user", (req, res) => {
         req.session.user
     );
 
-
     if (!req.session.user) {
 
         return res.json({
             loggedIn: false
         });
-
     }
-
 
     res.json({
         loggedIn: true,
         username: req.session.user.username,
         role: req.session.user.role
     });
-
 });
-
 
 // ========================================
 // DASHBOARD
@@ -333,16 +292,13 @@ app.get("/dashboard.html", (req, res) => {
         req.session.user
     );
 
-
     res.sendFile(
         path.join(
             __dirname,
             "dashboard.html"
         )
     );
-
 });
-
 
 // ========================================
 // ADMIN USERS
@@ -359,12 +315,9 @@ app.get(
             status: user.status
         }));
 
-
         res.json(safeUsers);
-
     }
 );
-
 
 // ========================================
 // APPROVE USER
@@ -378,11 +331,9 @@ app.post(
         const username =
             req.params.username;
 
-
         const user = users.find(
             item => item.username === username
         );
-
 
         if (!user) {
 
@@ -390,12 +341,9 @@ app.post(
                 success: false,
                 message: "User not found."
             });
-
         }
 
-
         user.status = "approved";
-
 
         addActivity(
             username,
@@ -403,16 +351,13 @@ app.post(
             "Registration request approved by admin."
         );
 
-
         res.json({
             success: true,
             message:
                 "User approved successfully."
         });
-
     }
 );
-
 
 // ========================================
 // REJECT USER
@@ -426,11 +371,9 @@ app.post(
         const username =
             req.params.username;
 
-
         const user = users.find(
             item => item.username === username
         );
-
 
         if (!user) {
 
@@ -438,12 +381,9 @@ app.post(
                 success: false,
                 message: "User not found."
             });
-
         }
 
-
         user.status = "rejected";
-
 
         addActivity(
             username,
@@ -451,16 +391,13 @@ app.post(
             "Registration request rejected by admin."
         );
 
-
         res.json({
             success: true,
             message:
                 "User rejected successfully."
         });
-
     }
 );
-
 
 // ========================================
 // LOGOUT
@@ -474,13 +411,11 @@ app.post(
         const username =
             req.session.user.username;
 
-
         addActivity(
             username,
             "User Logout",
             "User logged out."
         );
-
 
         req.session.destroy(error => {
 
@@ -494,19 +429,14 @@ app.post(
                 return res.status(500).json({
                     success: false
                 });
-
             }
-
 
             res.json({
                 success: true
             });
-
         });
-
     }
 );
-
 
 // ========================================
 // UPLOAD FILE
@@ -527,9 +457,7 @@ app.post(
                     message:
                         "Please select a file."
                 });
-
             }
-
 
             const command =
                 new PutObjectCommand({
@@ -539,16 +467,13 @@ app.post(
                     ContentType: req.file.mimetype
                 });
 
-
             await s3.send(command);
-
 
             addActivity(
                 req.session.user.username,
                 "File Uploaded",
                 req.file.originalname
             );
-
 
             res.json({
                 success: true,
@@ -563,18 +488,14 @@ app.post(
                 error
             );
 
-
             res.status(500).json({
                 success: false,
                 message:
                     "File upload failed."
             });
-
         }
-
     }
 );
-
 
 // ========================================
 // LIST FILES
@@ -592,10 +513,8 @@ app.get(
                     Bucket: BUCKET_NAME
                 });
 
-
             const result =
                 await s3.send(command);
-
 
             const files =
                 (result.Contents || [])
@@ -606,7 +525,6 @@ app.get(
                             file.LastModified
                     }));
 
-
             res.json(files);
 
         } catch (error) {
@@ -616,18 +534,14 @@ app.get(
                 error
             );
 
-
             res.status(500).json({
                 success: false,
                 message:
                     "Unable to load files."
             });
-
         }
-
     }
 );
-
 
 // ========================================
 // DOWNLOAD FILE
@@ -643,17 +557,14 @@ app.get(
             const filename =
                 req.params.filename;
 
-
             const command =
                 new GetObjectCommand({
                     Bucket: BUCKET_NAME,
                     Key: filename
                 });
 
-
             const result =
                 await s3.send(command);
-
 
             addActivity(
                 req.session.user.username,
@@ -661,12 +572,10 @@ app.get(
                 filename
             );
 
-
             res.setHeader(
                 "Content-Disposition",
                 `attachment; filename="${filename}"`
             );
-
 
             if (result.ContentType) {
 
@@ -674,9 +583,7 @@ app.get(
                     "Content-Type",
                     result.ContentType
                 );
-
             }
-
 
             result.Body.pipe(res);
 
@@ -687,16 +594,12 @@ app.get(
                 error
             );
 
-
             res.status(500).send(
                 "Unable to download file."
             );
-
         }
-
     }
 );
-
 
 // ========================================
 // DELETE FILE
@@ -712,23 +615,19 @@ app.delete(
             const filename =
                 req.params.filename;
 
-
             const command =
                 new DeleteObjectCommand({
                     Bucket: BUCKET_NAME,
                     Key: filename
                 });
 
-
             await s3.send(command);
-
 
             addActivity(
                 req.session.user.username,
                 "File Deleted",
                 filename
             );
-
 
             res.json({
                 success: true,
@@ -743,18 +642,14 @@ app.delete(
                 error
             );
 
-
             res.status(500).json({
                 success: false,
                 message:
                     "Unable to delete file."
             });
-
         }
-
     }
 );
-
 
 // ========================================
 // ACTIVITY
@@ -768,7 +663,6 @@ app.get(
         const currentUser =
             req.session.user;
 
-
         // ADMIN
         if (
             currentUser.role === "admin"
@@ -777,9 +671,7 @@ app.get(
             return res.json(
                 activities
             );
-
         }
-
 
         // NORMAL USER
         const userActivities =
@@ -790,10 +682,8 @@ app.get(
                         activity.username !==
                         currentUser.username
                     ) {
-
                         return false;
                     }
-
 
                     return [
                         "User Login",
@@ -803,18 +693,14 @@ app.get(
                     ].includes(
                         activity.action
                     );
-
                 }
             );
-
 
         res.json(
             userActivities
         );
-
     }
 );
-
 
 // ========================================
 // STATIC FILES
@@ -823,7 +709,6 @@ app.get(
 app.use(
     express.static(__dirname)
 );
-
 
 // ========================================
 // HOME
@@ -837,9 +722,7 @@ app.get("/", (req, res) => {
             "index.html"
         )
     );
-
 });
-
 
 // ========================================
 // SERVER
@@ -848,7 +731,6 @@ app.get("/", (req, res) => {
 console.log(
     "BEFORE APP.LISTEN"
 );
-
 
 const server = app.listen(
     PORT,
@@ -862,10 +744,8 @@ const server = app.listen(
         console.log(
             "SERVER IS ACTUALLY LISTENING."
         );
-
     }
 );
-
 
 server.on("error", error => {
 
@@ -873,5 +753,4 @@ server.on("error", error => {
         "SERVER ERROR:",
         error
     );
-
 });
