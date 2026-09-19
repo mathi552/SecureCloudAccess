@@ -1,0 +1,707 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Create Account | Secure Cloud Access</title>
+
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    >
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Segoe UI", Arial, sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            background:
+                radial-gradient(circle at top left, #17365d 0%, transparent 35%),
+                radial-gradient(circle at bottom right, #0c3b4a 0%, transparent 35%),
+                #07111f;
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 30px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1050px;
+            min-height: 650px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            background: rgba(11, 25, 43, 0.96);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 25px 70px rgba(0, 0, 0, 0.45);
+        }
+
+        /* LEFT SIDE */
+
+        .left-panel {
+            padding: 55px;
+            background:
+                linear-gradient(
+                    145deg,
+                    rgba(15, 45, 75, 0.98),
+                    rgba(7, 20, 35, 0.98)
+                );
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .logo {
+            width: 58px;
+            height: 58px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #2f80ed, #00b4d8);
+            font-size: 25px;
+            margin-bottom: 28px;
+            box-shadow: 0 10px 25px rgba(0, 180, 216, 0.2);
+        }
+
+        .left-panel h1 {
+            font-size: 38px;
+            line-height: 1.15;
+            margin-bottom: 18px;
+            letter-spacing: -1px;
+        }
+
+        .left-panel .intro {
+            color: #9fb0c3;
+            font-size: 15px;
+            line-height: 1.7;
+            max-width: 410px;
+            margin-bottom: 35px;
+        }
+
+        .features {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .feature {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: #d9e4ef;
+            font-size: 14px;
+        }
+
+        .feature-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 11px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(47, 128, 237, 0.13);
+            color: #4da3ff;
+            border: 1px solid rgba(77, 163, 255, 0.12);
+        }
+
+        /* RIGHT SIDE */
+
+        .right-panel {
+            padding: 55px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            background: rgba(8, 18, 31, 0.96);
+        }
+
+        .form-header {
+            margin-bottom: 30px;
+        }
+
+        .form-header h2 {
+            font-size: 30px;
+            margin-bottom: 9px;
+        }
+
+        .form-header p {
+            color: #8fa1b5;
+            font-size: 14px;
+        }
+
+        .input-group {
+            margin-bottom: 19px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #c7d3df;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .input-box {
+            position: relative;
+        }
+
+        .input-box > i:first-child {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6f8499;
+            font-size: 14px;
+        }
+
+        .input-box input {
+            width: 100%;
+            height: 50px;
+            padding: 0 48px;
+            background: #0c1a2b;
+            border: 1px solid #1c3047;
+            border-radius: 11px;
+            outline: none;
+            color: #ffffff;
+            font-size: 14px;
+            transition: 0.2s;
+        }
+
+        .input-box input::placeholder {
+            color: #5e7186;
+        }
+
+        .input-box input:focus {
+            border-color: #3289f5;
+            box-shadow: 0 0 0 3px rgba(50, 137, 245, 0.10);
+        }
+
+        .toggle-password {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #71859a;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .toggle-password:hover {
+            color: #4da3ff;
+        }
+
+        .register-btn {
+            width: 100%;
+            height: 51px;
+            border: none;
+            border-radius: 11px;
+            background: linear-gradient(135deg, #2878e8, #00a8cc);
+            color: white;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 7px;
+            transition: 0.25s;
+            box-shadow: 0 10px 25px rgba(0, 140, 210, 0.18);
+        }
+
+        .register-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 14px 30px rgba(0, 140, 210, 0.28);
+        }
+
+        .register-btn:disabled {
+            opacity: 0.65;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .message {
+            min-height: 22px;
+            margin-top: 15px;
+            text-align: center;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .message.success {
+            color: #45d483;
+        }
+
+        .message.error {
+            color: #ff6b6b;
+        }
+
+        .login-link {
+            text-align: center;
+            margin-top: 22px;
+            color: #8497aa;
+            font-size: 13px;
+        }
+
+        .login-link a {
+            color: #4da3ff;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .login-link a:hover {
+            text-decoration: underline;
+        }
+
+        .security-note {
+            margin-top: 25px;
+            padding: 13px 15px;
+            border-radius: 10px;
+            background: rgba(47, 128, 237, 0.06);
+            border: 1px solid rgba(47, 128, 237, 0.10);
+            color: #8195aa;
+            font-size: 11px;
+            line-height: 1.5;
+            display: flex;
+            align-items: flex-start;
+            gap: 9px;
+        }
+
+        .security-note i {
+            color: #4da3ff;
+            margin-top: 2px;
+        }
+
+        @media (max-width: 850px) {
+            .container {
+                grid-template-columns: 1fr;
+                max-width: 600px;
+            }
+
+            .left-panel {
+                padding: 40px;
+            }
+
+            .left-panel h1 {
+                font-size: 30px;
+            }
+
+            .right-panel {
+                padding: 40px;
+            }
+        }
+
+        @media (max-width: 500px) {
+            body {
+                padding: 15px;
+            }
+
+            .left-panel,
+            .right-panel {
+                padding: 30px 24px;
+            }
+
+            .container {
+                border-radius: 18px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <!-- LEFT PANEL -->
+
+    <div class="left-panel">
+
+        <div class="logo">
+            <i class="fa-solid fa-cloud-shield"></i>
+        </div>
+
+        <h1>Request Cloud Access</h1>
+
+        <p class="intro">
+            Create your account to request secure access to the
+            cloud storage environment. Your account will be reviewed
+            by an administrator before access is granted.
+        </p>
+
+        <div class="features">
+
+            <div class="feature">
+                <div class="feature-icon">
+                    <i class="fa-solid fa-user-shield"></i>
+                </div>
+                <span>Secure user registration</span>
+            </div>
+
+            <div class="feature">
+                <div class="feature-icon">
+                    <i class="fa-solid fa-user-check"></i>
+                </div>
+                <span>Administrator approval workflow</span>
+            </div>
+
+            <div class="feature">
+                <div class="feature-icon">
+                    <i class="fa-solid fa-cloud"></i>
+                </div>
+                <span>AWS cloud storage access</span>
+            </div>
+
+            <div class="feature">
+                <div class="feature-icon">
+                    <i class="fa-solid fa-lock"></i>
+                </div>
+                <span>Controlled IAM permissions</span>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- RIGHT PANEL -->
+
+    <div class="right-panel">
+
+        <div class="form-header">
+            <h2>Create Account</h2>
+            <p>Submit a request for secure cloud access.</p>
+        </div>
+
+        <form onsubmit="registerUser(event)">
+
+            <!-- USERNAME -->
+
+            <div class="input-group">
+
+                <label for="username">
+                    Username
+                </label>
+
+                <div class="input-box">
+
+                    <i class="fa-solid fa-user"></i>
+
+                    <input
+                        type="text"
+                        id="username"
+                        name="username"
+                        placeholder="Enter username"
+                        autocomplete="username"
+                        required
+                    >
+
+                </div>
+
+            </div>
+
+
+            <!-- PASSWORD -->
+
+            <div class="input-group">
+
+                <label for="password">
+                    Password
+                </label>
+
+                <div class="input-box">
+
+                    <i class="fa-solid fa-lock"></i>
+
+                    <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        placeholder="Create a password"
+                        autocomplete="new-password"
+                        minlength="6"
+                        required
+                    >
+
+                    <span
+                        class="toggle-password"
+                        onclick="togglePassword('password', this)"
+                    >
+                        <i class="fa-solid fa-eye"></i>
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <!-- CONFIRM PASSWORD -->
+
+            <div class="input-group">
+
+                <label for="confirmPassword">
+                    Confirm Password
+                </label>
+
+                <div class="input-box">
+
+                    <i class="fa-solid fa-shield-halved"></i>
+
+                    <input
+                        type="password"
+                        id="confirmPassword"
+                        name="confirmPassword"
+                        placeholder="Confirm your password"
+                        autocomplete="new-password"
+                        minlength="6"
+                        required
+                    >
+
+                    <span
+                        class="toggle-password"
+                        onclick="togglePassword('confirmPassword', this)"
+                    >
+                        <i class="fa-solid fa-eye"></i>
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <!-- BUTTON -->
+
+            <button
+                type="submit"
+                class="register-btn"
+                id="registerButton"
+            >
+                <i class="fa-solid fa-user-plus"></i>
+                &nbsp; Request Access
+            </button>
+
+            <div
+                id="message"
+                class="message"
+            ></div>
+
+        </form>
+
+
+        <!-- LOGIN LINK -->
+
+        <div class="login-link">
+            Already have an account?
+            <a href="/index.html">Sign In</a>
+        </div>
+
+
+        <!-- SECURITY NOTE -->
+
+        <div class="security-note">
+
+            <i class="fa-solid fa-circle-info"></i>
+
+            <span>
+                Access is granted only after administrator approval.
+                Your account will remain pending until reviewed.
+            </span>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<script>
+
+    async function registerUser(event) {
+
+        event.preventDefault();
+
+        const username =
+            document.getElementById("username").value.trim();
+
+        const password =
+            document.getElementById("password").value;
+
+        const confirmPassword =
+            document.getElementById("confirmPassword").value;
+
+        const message =
+            document.getElementById("message");
+
+        const registerButton =
+            document.getElementById("registerButton");
+
+
+        message.textContent = "";
+        message.className = "message";
+
+
+        /* PASSWORD MATCH CHECK */
+
+        if (password !== confirmPassword) {
+
+            message.textContent =
+                "Passwords do not match.";
+
+            message.className =
+                "message error";
+
+            return;
+        }
+
+
+        /* PASSWORD LENGTH CHECK */
+
+        if (password.length < 6) {
+
+            message.textContent =
+                "Password must contain at least 6 characters.";
+
+            message.className =
+                "message error";
+
+            return;
+        }
+
+
+        /* LOADING */
+
+        registerButton.disabled = true;
+
+        registerButton.innerHTML =
+            '<i class="fa-solid fa-spinner fa-spin"></i> &nbsp; Submitting...';
+
+
+        try {
+
+            const response = await fetch("/register", {
+
+                method: "POST",
+
+                headers: {
+                    "Content-Type":
+                        "application/x-www-form-urlencoded"
+                },
+
+                body:
+                    "username=" +
+                    encodeURIComponent(username) +
+                    "&password=" +
+                    encodeURIComponent(password)
+
+            });
+
+
+            const data =
+                await response.json();
+
+
+            if (response.ok && data.success) {
+
+                message.textContent =
+                    "Registration successful! Waiting for admin approval.";
+
+                message.className =
+                    "message success";
+
+
+                registerButton.innerHTML =
+                    '<i class="fa-solid fa-check"></i> &nbsp; Request Submitted';
+
+
+                document.getElementById("username").disabled = true;
+                document.getElementById("password").disabled = true;
+                document.getElementById("confirmPassword").disabled = true;
+
+
+                setTimeout(() => {
+
+                    window.location.href =
+                        "/index.html";
+
+                }, 2500);
+
+            } else {
+
+                message.textContent =
+                    data.message ||
+                    "Registration failed. Please try again.";
+
+                message.className =
+                    "message error";
+
+
+                registerButton.disabled = false;
+
+                registerButton.innerHTML =
+                    '<i class="fa-solid fa-user-plus"></i> &nbsp; Request Access';
+
+            }
+
+        } catch (error) {
+
+            console.error(
+                "REGISTRATION ERROR:",
+                error
+            );
+
+            message.textContent =
+                "Unable to connect to the server.";
+
+            message.className =
+                "message error";
+
+
+            registerButton.disabled = false;
+
+            registerButton.innerHTML =
+                '<i class="fa-solid fa-user-plus"></i> &nbsp; Request Access';
+        }
+
+    }
+
+
+    /* SHOW / HIDE PASSWORD */
+
+    function togglePassword(inputId, iconContainer) {
+
+        const input =
+            document.getElementById(inputId);
+
+        const icon =
+            iconContainer.querySelector("i");
+
+
+        if (input.type === "password") {
+
+            input.type = "text";
+
+            icon.classList.remove("fa-eye");
+
+            icon.classList.add("fa-eye-slash");
+
+        } else {
+
+            input.type = "password";
+
+            icon.classList.remove("fa-eye-slash");
+
+            icon.classList.add("fa-eye");
+        }
+
+    }
+
+</script>
+
+</body>
+</html>
+```
