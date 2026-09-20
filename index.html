@@ -1,223 +1,221 @@
 <!DOCTYPE html>
-
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-```
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>Secure Cloud Access Management</title>
 
 <style>
-    * {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
-        font-family: Arial, Helvetica, sans-serif;
-    }
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: Arial, Helvetica, sans-serif;
+}
 
-    body {
-        min-height: 100vh;
-        background:
-            radial-gradient(circle at top right, #12365a 0%, transparent 35%),
-            #07111f;
-        color: #ffffff;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 20px;
-    }
+body {
+    min-height: 100vh;
+    background:
+        radial-gradient(circle at top right, #12365a 0%, transparent 35%),
+        #07111f;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
 
-    .login-container {
-        width: 100%;
-        max-width: 430px;
-    }
+.login-container {
+    width: 100%;
+    max-width: 430px;
+}
 
-    .brand {
-        text-align: center;
-        margin-bottom: 25px;
-    }
+.brand {
+    text-align: center;
+    margin-bottom: 25px;
+}
 
-    .brand-icon {
-        width: 62px;
-        height: 62px;
-        margin: 0 auto 15px;
-        border-radius: 16px;
-        background: #12395b;
-        border: 1px solid #28618f;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 28px;
+.brand-icon {
+    width: 62px;
+    height: 62px;
+    margin: 0 auto 15px;
+    border-radius: 16px;
+    background: #12395b;
+    border: 1px solid #28618f;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+}
+
+.brand h1 {
+    font-size: 27px;
+    margin-bottom: 7px;
+}
+
+.brand p {
+    color: #8da2ba;
+    font-size: 14px;
+}
+
+.login-card {
+    background: rgba(12, 27, 45, 0.97);
+    border: 1px solid #1b3653;
+    border-radius: 16px;
+    padding: 30px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+}
+
+.login-card h2 {
+    font-size: 22px;
+    margin-bottom: 8px;
+}
+
+.subtitle {
+    color: #8da2ba;
+    font-size: 14px;
+    margin-bottom: 25px;
+}
+
+.form-group {
+    margin-bottom: 18px;
+}
+
+label {
+    display: block;
+    color: #b9c9da;
+    font-size: 13px;
+    margin-bottom: 8px;
+}
+
+input {
+    width: 100%;
+    padding: 13px 14px;
+    border-radius: 9px;
+    border: 1px solid #29445f;
+    background: #081526;
+    color: #ffffff;
+    outline: none;
+    font-size: 14px;
+}
+
+input:focus {
+    border-color: #38a8e8;
+    box-shadow: 0 0 0 3px rgba(56, 168, 232, 0.1);
+}
+
+.password-wrapper {
+    position: relative;
+}
+
+.password-wrapper input {
+    padding-right: 70px;
+}
+
+.show-password {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    color: #66b9e9;
+    padding: 0;
+    font-size: 12px;
+}
+
+.show-password:hover {
+    background: none;
+}
+
+.login-btn {
+    width: 100%;
+    margin-top: 5px;
+    padding: 13px;
+    background: #1479b8;
+    color: white;
+    border: none;
+    border-radius: 9px;
+    font-size: 15px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.login-btn:hover {
+    background: #1a94d4;
+}
+
+.login-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.message {
+    display: none;
+    margin-top: 15px;
+    padding: 11px;
+    border-radius: 8px;
+    font-size: 13px;
+    text-align: center;
+}
+
+.message.success {
+    display: block;
+    background: #0c3525;
+    color: #6ee8a0;
+    border: 1px solid #1b6746;
+}
+
+.message.error {
+    display: block;
+    background: #3b171b;
+    color: #ff858c;
+    border: 1px solid #743239;
+}
+
+.register-box {
+    text-align: center;
+    margin-top: 22px;
+    padding-top: 20px;
+    border-top: 1px solid #1b3047;
+    font-size: 13px;
+    color: #8da2ba;
+}
+
+.register-box a {
+    color: #5ec8ff;
+    text-decoration: none;
+    font-weight: bold;
+    margin-left: 5px;
+}
+
+.register-box a:hover {
+    text-decoration: underline;
+}
+
+.security-note {
+    text-align: center;
+    color: #607993;
+    font-size: 11px;
+    margin-top: 18px;
+}
+
+@media (max-width: 500px) {
+    .login-card {
+        padding: 24px;
     }
 
     .brand h1 {
-        font-size: 27px;
-        margin-bottom: 7px;
+        font-size: 23px;
     }
-
-    .brand p {
-        color: #8da2ba;
-        font-size: 14px;
-    }
-
-    .login-card {
-        background: rgba(12, 27, 45, 0.97);
-        border: 1px solid #1b3653;
-        border-radius: 16px;
-        padding: 30px;
-        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
-    }
-
-    .login-card h2 {
-        font-size: 22px;
-        margin-bottom: 8px;
-    }
-
-    .subtitle {
-        color: #8da2ba;
-        font-size: 14px;
-        margin-bottom: 25px;
-    }
-
-    .form-group {
-        margin-bottom: 18px;
-    }
-
-    label {
-        display: block;
-        color: #b9c9da;
-        font-size: 13px;
-        margin-bottom: 8px;
-    }
-
-    input {
-        width: 100%;
-        padding: 13px 14px;
-        border-radius: 9px;
-        border: 1px solid #29445f;
-        background: #081526;
-        color: #ffffff;
-        outline: none;
-        font-size: 14px;
-    }
-
-    input:focus {
-        border-color: #38a8e8;
-        box-shadow: 0 0 0 3px rgba(56, 168, 232, 0.1);
-    }
-
-    .password-wrapper {
-        position: relative;
-    }
-
-    .password-wrapper input {
-        padding-right: 70px;
-    }
-
-    .show-password {
-        position: absolute;
-        right: 12px;
-        top: 50%;
-        transform: translateY(-50%);
-        background: none;
-        color: #66b9e9;
-        padding: 0;
-        font-size: 12px;
-    }
-
-    .show-password:hover {
-        background: none;
-    }
-
-    .login-btn {
-        width: 100%;
-        margin-top: 5px;
-        padding: 13px;
-        background: #1479b8;
-        color: white;
-        border: none;
-        border-radius: 9px;
-        font-size: 15px;
-        font-weight: bold;
-        cursor: pointer;
-        transition: 0.2s;
-    }
-
-    .login-btn:hover {
-        background: #1a94d4;
-    }
-
-    .message {
-        display: none;
-        margin-top: 15px;
-        padding: 11px;
-        border-radius: 8px;
-        font-size: 13px;
-        text-align: center;
-    }
-
-    .message.success {
-        display: block;
-        background: #0c3525;
-        color: #6ee8a0;
-        border: 1px solid #1b6746;
-    }
-
-    .message.error {
-        display: block;
-        background: #3b171b;
-        color: #ff858c;
-        border: 1px solid #743239;
-    }
-
-    .register-box {
-        text-align: center;
-        margin-top: 22px;
-        padding-top: 20px;
-        border-top: 1px solid #1b3047;
-        font-size: 13px;
-        color: #8da2ba;
-    }
-
-    .register-box a {
-        color: #5ec8ff;
-        text-decoration: none;
-        font-weight: bold;
-        margin-left: 5px;
-    }
-
-    .register-box a:hover {
-        text-decoration: underline;
-    }
-
-    .security-note {
-        text-align: center;
-        color: #607993;
-        font-size: 11px;
-        margin-top: 18px;
-    }
-
-    @media (max-width: 500px) {
-        .login-card {
-            padding: 24px;
-        }
-
-        .brand h1 {
-            font-size: 23px;
-        }
-    }
+}
 </style>
-```
-
 </head>
 
 <body>
 
-```
 <div class="login-container">
-
-    <!-- BRAND -->
 
     <div class="brand">
 
@@ -235,9 +233,6 @@
 
     </div>
 
-
-    <!-- LOGIN CARD -->
-
     <div class="login-card">
 
         <h2>
@@ -248,13 +243,7 @@
             Sign in to access your secure cloud dashboard.
         </p>
 
-
-        <form
-            id="loginForm"
-            onsubmit="loginUser(event)"
-        >
-
-            <!-- USERNAME -->
+        <form id="loginForm">
 
             <div class="form-group">
 
@@ -272,9 +261,6 @@
                 >
 
             </div>
-
-
-            <!-- PASSWORD -->
 
             <div class="form-group">
 
@@ -305,9 +291,6 @@
 
             </div>
 
-
-            <!-- LOGIN -->
-
             <button
                 type="submit"
                 class="login-btn"
@@ -318,17 +301,10 @@
 
         </form>
 
-
-        <!-- LOGIN MESSAGE -->
-
         <div
             id="message"
-            class="message"
-        >
+            class="message">
         </div>
-
-
-        <!-- CREATE ACCOUNT -->
 
         <div class="register-box">
 
@@ -344,192 +320,133 @@
 
     </div>
 
-
     <div class="security-note">
         🔒 Protected cloud access • AWS IAM secured
     </div>
 
 </div>
 
-
 <script>
 
-    /* =====================================================
-       PASSWORD SHOW / HIDE
-    ===================================================== */
+function togglePassword() {
 
-    function togglePassword() {
+    const password =
+        document.getElementById("password");
 
-        const password =
-            document.getElementById("password");
+    const button =
+        document.querySelector(".show-password");
 
-        const button =
-            document.querySelector(".show-password");
+    if (password.type === "password") {
 
+        password.type = "text";
+        button.textContent = "Hide";
 
-        if (password.type === "password") {
+    } else {
 
-            password.type = "text";
-
-            button.textContent = "Hide";
-
-        }
-
-        else {
-
-            password.type = "password";
-
-            button.textContent = "Show";
-
-        }
+        password.type = "password";
+        button.textContent = "Show";
 
     }
+}
 
 
-    /* =====================================================
-       LOGIN
-    ===================================================== */
-
-    async function loginUser(event) {
-
-        event.preventDefault();
+document
+    .getElementById("loginForm")
+    .addEventListener("submit", loginUser);
 
 
-        const username =
-            document.getElementById(
-                "username"
-            ).value.trim();
+async function loginUser(event) {
 
+    event.preventDefault();
 
-        const password =
-            document.getElementById(
-                "password"
-            ).value;
+    const username =
+        document.getElementById("username")
+            .value
+            .trim();
 
+    const password =
+        document.getElementById("password")
+            .value;
 
-        const message =
-            document.getElementById(
-                "message"
-            );
+    const message =
+        document.getElementById("message");
 
+    const loginButton =
+        document.getElementById("loginButton");
 
-        const loginButton =
-            document.getElementById(
-                "loginButton"
-            );
+    message.className = "message";
+    message.textContent = "";
 
+    loginButton.disabled = true;
+    loginButton.textContent = "Signing In...";
 
-        message.className =
-            "message";
+    try {
 
+        const response =
+            await fetch("/login", {
 
-        message.textContent =
-            "";
+                method: "POST",
 
+                headers: {
+                    "Content-Type":
+                        "application/x-www-form-urlencoded"
+                },
 
-        loginButton.disabled = true;
+                credentials: "same-origin",
 
-        loginButton.textContent =
-            "Signing In...";
+                body:
+                    new URLSearchParams({
+                        username,
+                        password
+                    })
+            });
 
+        const data =
+            await response.json();
 
-        try {
-
-            const response =
-                await fetch(
-                    "/login",
-                    {
-                        method: "POST",
-
-                        headers: {
-                            "Content-Type":
-                                "application/x-www-form-urlencoded"
-                        },
-
-                        body:
-                            new URLSearchParams({
-                                username:
-                                    username,
-
-                                password:
-                                    password
-                            })
-                    }
-                );
-
-
-            const data =
-                await response.json();
-
-
-            if (
-                response.ok &&
-                data.success
-            ) {
-
-                message.className =
-                    "message success";
-
-                message.textContent =
-                    "Login successful. Opening dashboard...";
-
-
-                setTimeout(
-                    function() {
-
-                        window.location.href =
-                            "/dashboard.html";
-
-                    },
-                    700
-                );
-
-            }
-
-            else {
-
-                message.className =
-                    "message error";
-
-                message.textContent =
-                    data.message ||
-                    "Invalid username or password.";
-
-                loginButton.disabled = false;
-
-                loginButton.textContent =
-                    "Sign In";
-
-            }
-
-        }
-
-        catch (error) {
-
-            console.error(
-                "Login error:",
-                error
-            );
-
+        if (response.ok && data.success) {
 
             message.className =
-                "message error";
+                "message success";
 
             message.textContent =
-                "Unable to connect to the server.";
+                "Login successful. Opening dashboard...";
 
+            window.location.href =
+                "/dashboard.html";
 
-            loginButton.disabled = false;
-
-            loginButton.textContent =
-                "Sign In";
-
+            return;
         }
 
+        message.className =
+            "message error";
+
+        message.textContent =
+            data.message ||
+            "Invalid username or password.";
+
+        loginButton.disabled = false;
+        loginButton.textContent = "Sign In";
+
+    } catch (error) {
+
+        console.error(
+            "Login error:",
+            error
+        );
+
+        message.className =
+            "message error";
+
+        message.textContent =
+            "Unable to connect to the server.";
+
+        loginButton.disabled = false;
+        loginButton.textContent = "Sign In";
     }
+}
 
 </script>
-```
 
 </body>
 </html>
