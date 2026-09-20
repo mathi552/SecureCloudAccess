@@ -1,824 +1,844 @@
 const express = require("express");
-const path = require("path");
 const session = require("express-session");
 const multer = require("multer");
+const path = require("path");
 
 const {
-    S3Client,
-    ListObjectsV2Command,
-    PutObjectCommand,
-    GetObjectCommand,
-    DeleteObjectCommand
+  S3Client,
+  ListObjectsV2Command,
+  PutObjectCommand,
+  GetObjectCommand,
+  DeleteObjectCommand
 } = require("@aws-sdk/client-s3");
 
 const app = express();
 
+/* =========================
+   RENDER PROXY FIX
+========================= */
+
+app.set("trust proxy", 1);
+
+/* =========================
+   CONFIG
+========================= */
+
 const PORT = process.env.PORT || 3000;
 const HOST = "0.0.0.0";
 
-const AWS_REGION = "eu-north-1";
-const BUCKET_NAME = "prm-secure-cloud-storage";
+const AWS_REGION = process.env.AWS_REGION || "eu-north-1";
+const BUCKET_NAME =
+  process.env.S3_BUCKET || "prm-secure-cloud-storage";
+
+const IS_PRODUCTION =
+  process.env.RENDER === "true" ||
+  process.env.NODE_ENV === "production";
+
+/* =========================
+   AWS S3
+========================= */
 
 const s3 = new S3Client({
-    region: AWS_REGION
+  region: AWS_REGION
 });
 
-const upload = multer({
-    storage: multer.memoryStorage()
-});
+/* =========================
+   MIDDLEWARE
+========================= */
 
-app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 app.use(
-    session({
-        secret:
-            process.env.SESSION_SECRET ||
-            "secure-cloud-project-session",
+  session({
+    secret:
+      process.env.SESSION_SECRET ||
+      "secure-cloud-access-project-session-secret",
 
-        resave: false,
+    resave: false,
 
-        saveUninitialized: false,
+    saveUninitialized: false,
 
-        cookie: {
-            httpOnly: true,
-            secure: process.env.RENDER === "true",
-            sameSite: "lax"
-        }
-    })
+    proxy: true,
+
+    cookie: {
+      httpOnly: true,
+      secure: IS_PRODUCTION,
+      sameSite: "lax",
+      maxAge: 1000 * 60 * 60 * 8
+    }
+  })
 );
 
-// ======================================================
-// USERS
-// ======================================================
+/* =========================
+   FILE UPLOAD
+========================= */
 
-let users = [
-    {
-        id: 1,
-        username: "project-admin",
-        password: "Secure@123",
-        role: "admin",
-        status: "approved"
-    }
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 25 * 1024 * 1024
+  }
+});
+
+/* =========================
+   USERS
+========================= */
+
+const users = [
+  {
+    id: 1,
+    username: "project-admin",
+
+    // If you already use another password locally,
+    // change ONLY this value locally.
+    password:
+      process.env.ADMIN_PASSWORD || "Secure@123",
+
+    role: "admin",
+    status: "approved"
+  }
 ];
 
-// ======================================================
-// ACTIVITY
-// ======================================================
+/* =========================
+   ACTIVITIES
+========================= */
 
-let activities = [];
+const activities = [];
 
-// ======================================================
-// LOGIN CHECK
-// ======================================================
+/* =========================
+   HELPERS
+========================= */
+
+function addActivity(username, action, details = "") {
+  activities.unshift({
+    id: Date.now(),
+    username,
+    action,
+    details,
+    time: new Date().toISOString()
+  });
+
+  // Keep memory under control
+  if (activities.length > 500) {
+    activities.pop();
+  }
+}
 
 function requireLogin(req, res, next) {
-    if (!req.session || !req.session.user) {
-        return res.status(401).json({
-            success: false,
-            loggedIn: false,
-            message: "Please login first."
-        });
-    }
+  if (!req.session.user) {
+    return res.status(401).json({
+      success: false,
+      loggedIn: false,
+      message: "Please login first."
+    });
+  }
 
-    next();
+  next();
 }
-
-// ======================================================
-// ADMIN CHECK
-// ======================================================
 
 function requireAdmin(req, res, next) {
-    if (!req.session || !req.session.user) {
-        return res.status(401).json({
-            success: false,
-            message: "Please login first."
-        });
-    }
+  if (!req.session.user) {
+    return res.status(401).json({
+      success: false,
+      loggedIn: false,
+      message: "Please login first."
+    });
+  }
 
-    if (req.session.user.role !== "admin") {
-        return res.status(403).json({
-            success: false,
-            message: "Admin access required."
-        });
-    }
+  if (req.session.user.role !== "admin") {
+    return res.status(403).json({
+      success: false,
+      message: "Admin access required."
+    });
+  }
 
-    next();
+  next();
 }
 
-// ======================================================
-// HOME
-// ======================================================
+/* =========================
+   HOME
+========================= */
 
 app.get("/", (req, res) => {
-    res.sendFile(path.join(__dirname, "index.html"));
+  res.sendFile(path.join(__dirname, "index.html"));
 });
 
-// ======================================================
-// REGISTER PAGE
-// ======================================================
+/* =========================
+   REGISTER PAGE
+========================= */
 
 app.get("/register.html", (req, res) => {
-    res.sendFile(path.join(__dirname, "register.html"));
+  res.sendFile(path.join(__dirname, "register.html"));
 });
 
-// ======================================================
-// DASHBOARD PAGE
-// ======================================================
+/* =========================
+   DASHBOARD
+========================= */
 
 app.get("/dashboard.html", requireLogin, (req, res) => {
-    console.log("DASHBOARD REQUEST");
-    console.log("DASHBOARD SESSION:", req.session.user);
-
-    res.sendFile(path.join(__dirname, "dashboard.html"));
+  res.sendFile(path.join(__dirname, "dashboard.html"));
 });
 
-// ======================================================
-// REGISTER
-// ======================================================
+/* =========================
+   REGISTER
+========================= */
 
 app.post("/register", (req, res) => {
-    const username = String(req.body.username || "").trim();
-    const password = String(req.body.password || "").trim();
+  const username = String(req.body.username || "").trim();
+  const password = String(req.body.password || "");
 
-    if (!username || !password) {
-        return res.status(400).json({
-            success: false,
-            message: "Username and password are required."
-        });
-    }
-
-    const existingUser = users.find(
-        user =>
-            user.username.toLowerCase() ===
-            username.toLowerCase()
-    );
-
-    if (existingUser) {
-        return res.status(400).json({
-            success: false,
-            message: "Username already exists."
-        });
-    }
-
-    const newUser = {
-        id: Date.now(),
-        username,
-        password,
-        role: "user",
-        status: "pending"
-    };
-
-    users.push(newUser);
-
-    activities.push({
-        username,
-        action: "Registration Request",
-        time: new Date().toISOString()
+  if (!username || !password) {
+    return res.status(400).json({
+      success: false,
+      message: "Username and password are required."
     });
+  }
 
-    res.json({
-        success: true,
-        message:
-            "Registration submitted. Please wait for admin approval."
+  const existingUser = users.find(
+    (user) =>
+      user.username.toLowerCase() === username.toLowerCase()
+  );
+
+  if (existingUser) {
+    return res.status(409).json({
+      success: false,
+      message: "Username already exists."
     });
+  }
+
+  const newUser = {
+    id: Date.now(),
+    username,
+    password,
+    role: "user",
+    status: "pending"
+  };
+
+  users.push(newUser);
+
+  res.json({
+    success: true,
+    message:
+      "Registration submitted. Please wait for admin approval."
+  });
 });
 
-// ======================================================
-// LOGIN
-// ======================================================
+/* =========================
+   LOGIN
+========================= */
 
 app.post("/login", (req, res) => {
-    console.log("LOGIN REQUEST");
+  const username = String(req.body.username || "").trim();
+  const password = String(req.body.password || "");
 
-    const username = String(
-        req.body.username || ""
-    ).trim();
+  console.log("LOGIN REQUEST");
 
-    const password = String(
-        req.body.password || ""
-    ).trim();
+  const user = users.find(
+    (u) =>
+      u.username.toLowerCase() === username.toLowerCase() &&
+      u.password === password
+  );
 
-    const user = users.find(
-        u =>
-            u.username === username &&
-            u.password === password
-    );
+  if (!user) {
+    return res.status(401).json({
+      success: false,
+      message: "Invalid username or password."
+    });
+  }
 
-    if (!user) {
-        return res.status(401).json({
-            success: false,
-            message: "Invalid username or password."
-        });
+  if (user.status !== "approved") {
+    return res.status(403).json({
+      success: false,
+      message:
+        "Your account is waiting for admin approval."
+    });
+  }
+
+  req.session.user = {
+    id: user.id,
+    username: user.username,
+    role: user.role
+  };
+
+  console.log("SESSION CREATED:", req.session.user);
+
+  addActivity(
+    user.username,
+    "Login",
+    "User logged into Secure Cloud Access"
+  );
+
+  /*
+    IMPORTANT:
+    Save the session BEFORE sending the response.
+    This prevents Render from redirecting before
+    the session cookie is stored.
+  */
+
+  req.session.save((err) => {
+    if (err) {
+      console.error("SESSION SAVE ERROR:", err);
+
+      return res.status(500).json({
+        success: false,
+        message: "Unable to create login session."
+      });
     }
 
-    if (user.status !== "approved") {
-        return res.status(403).json({
-            success: false,
-            message:
-                "Your account is waiting for admin approval."
-        });
-    }
+    return res.json({
+      success: true,
+      loggedIn: true,
+      user: {
+        username: user.username,
+        role: user.role
+      },
 
-    req.session.regenerate(err => {
-        if (err) {
-            console.error("Session regenerate error:", err);
+      username: user.username,
+      role: user.role,
 
-            return res.status(500).json({
-                success: false,
-                message: "Session creation failed."
-            });
-        }
-
-        req.session.user = {
-            username: user.username,
-            role: user.role
-        };
-
-        activities.push({
-            username: user.username,
-            action: "User Login",
-            time: new Date().toISOString()
-        });
-
-        req.session.save(saveError => {
-            if (saveError) {
-                console.error(
-                    "Session save error:",
-                    saveError
-                );
-
-                return res.status(500).json({
-                    success: false,
-                    message: "Session save failed."
-                });
-            }
-
-            console.log(
-                "SESSION CREATED:",
-                req.session.user
-            );
-
-            res.json({
-                success: true,
-                message: "Login successful.",
-                user: {
-                    username: user.username,
-                    role: user.role
-                }
-            });
-        });
+      redirect: "/dashboard.html"
     });
+  });
 });
 
-// ======================================================
-// CURRENT USER
-// ======================================================
+/* =========================
+   CURRENT USER
+========================= */
 
-app.get("/current-user", requireLogin, (req, res) => {
-    console.log(
-        "CURRENT USER SESSION:",
-        req.session.user
-    );
+app.get("/current-user", (req, res) => {
+  console.log(
+    "CURRENT USER SESSION:",
+    req.session.user
+  );
 
-    res.json({
-        success: true,
-        loggedIn: true,
-
-        user: {
-            username: req.session.user.username,
-            role: req.session.user.role
-        },
-
-        // Compatibility fields
-        username: req.session.user.username,
-        role: req.session.user.role
+  if (!req.session.user) {
+    return res.status(401).json({
+      success: false,
+      loggedIn: false,
+      message: "Please login first."
     });
+  }
+
+  res.json({
+    success: true,
+    loggedIn: true,
+
+    user: {
+      username: req.session.user.username,
+      role: req.session.user.role
+    },
+
+    username: req.session.user.username,
+    role: req.session.user.role
+  });
 });
 
-// ======================================================
-// LOGOUT
-// ======================================================
+/* =========================
+   LOGOUT
+========================= */
 
 app.get("/logout", (req, res) => {
-    if (!req.session) {
-        return res.redirect("/");
+  const username = req.session?.user?.username;
+
+  if (username) {
+    addActivity(
+      username,
+      "Logout",
+      "User logged out"
+    );
+  }
+
+  req.session.destroy((err) => {
+    if (err) {
+      console.error("LOGOUT ERROR:", err);
+
+      return res.status(500).json({
+        success: false,
+        message: "Logout failed."
+      });
     }
 
-    req.session.destroy(err => {
-        if (err) {
-            console.error("Logout error:", err);
-
-            return res.status(500).send(
-                "Logout failed."
-            );
-        }
-
-        res.clearCookie("connect.sid");
-
-        res.redirect("/");
+    res.clearCookie("connect.sid", {
+      httpOnly: true,
+      secure: IS_PRODUCTION,
+      sameSite: "lax"
     });
+
+    res.redirect("/");
+  });
 });
 
 app.get("/logout/", (req, res) => {
-    res.redirect("/logout");
+  const username = req.session?.user?.username;
+
+  if (username) {
+    addActivity(
+      username,
+      "Logout",
+      "User logged out"
+    );
+  }
+
+  req.session.destroy(() => {
+    res.clearCookie("connect.sid", {
+      httpOnly: true,
+      secure: IS_PRODUCTION,
+      sameSite: "lax"
+    });
+
+    res.redirect("/");
+  });
 });
 
 app.post("/logout", (req, res) => {
-    if (!req.session) {
-        return res.json({
-            success: true
-        });
+  const username = req.session?.user?.username;
+
+  if (username) {
+    addActivity(
+      username,
+      "Logout",
+      "User logged out"
+    );
+  }
+
+  req.session.destroy((err) => {
+    if (err) {
+      return res.status(500).json({
+        success: false,
+        message: "Logout failed."
+      });
     }
 
-    req.session.destroy(err => {
-        if (err) {
-            return res.status(500).json({
-                success: false,
-                message: "Logout failed."
-            });
-        }
-
-        res.clearCookie("connect.sid");
-
-        res.json({
-            success: true
-        });
+    res.clearCookie("connect.sid", {
+      httpOnly: true,
+      secure: IS_PRODUCTION,
+      sameSite: "lax"
     });
+
+    res.json({
+      success: true
+    });
+  });
 });
 
-// ======================================================
-// ADMIN USERS
-// ======================================================
+/* =========================
+   ADMIN - USERS
+========================= */
 
-app.get("/admin/users", requireAdmin, (req, res) => {
-    const safeUsers = users.map(user => ({
-        id: user.id,
-        username: user.username,
-        role: user.role,
-        status: user.status
+app.get(
+  "/admin/users",
+  requireAdmin,
+  (req, res) => {
+    const safeUsers = users.map((user) => ({
+      id: user.id,
+      username: user.username,
+      role: user.role,
+      status: user.status
     }));
 
     res.json({
-        success: true,
-        users: safeUsers
+      success: true,
+      users: safeUsers
     });
-});
-
-// ======================================================
-// APPROVE
-// ======================================================
-
-app.post(
-    "/admin/approve/:id",
-    requireAdmin,
-    (req, res) => {
-        const id = Number(req.params.id);
-
-        const user = users.find(
-            u => u.id === id
-        );
-
-        if (!user) {
-            return res.status(404).json({
-                success: false,
-                message: "User not found."
-            });
-        }
-
-        user.status = "approved";
-
-        activities.push({
-            username:
-                req.session.user.username,
-
-            action:
-                `User Approved: ${user.username}`,
-
-            time: new Date().toISOString()
-        });
-
-        res.json({
-            success: true,
-            message: "User approved successfully."
-        });
-    }
+  }
 );
 
-// ======================================================
-// REJECT
-// ======================================================
+/* =========================
+   ADMIN - APPROVE
+========================= */
 
 app.post(
-    "/admin/reject/:id",
-    requireAdmin,
-    (req, res) => {
-        const id = Number(req.params.id);
+  "/admin/approve/:id",
+  requireAdmin,
+  (req, res) => {
+    const id = Number(req.params.id);
 
-        const user = users.find(
-            u => u.id === id
-        );
+    const user = users.find(
+      (u) => u.id === id
+    );
 
-        if (!user) {
-            return res.status(404).json({
-                success: false,
-                message: "User not found."
-            });
-        }
-
-        user.status = "rejected";
-
-        activities.push({
-            username:
-                req.session.user.username,
-
-            action:
-                `User Rejected: ${user.username}`,
-
-            time: new Date().toISOString()
-        });
-
-        res.json({
-            success: true,
-            message: "User rejected successfully."
-        });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found."
+      });
     }
+
+    user.status = "approved";
+
+    addActivity(
+      req.session.user.username,
+      "User Approved",
+      `Approved user: ${user.username}`
+    );
+
+    res.json({
+      success: true,
+      message: "User approved successfully."
+    });
+  }
 );
 
-// ======================================================
-// UPLOAD
-// ======================================================
+/* =========================
+   ADMIN - REJECT
+========================= */
 
 app.post(
-    "/upload",
-    requireLogin,
-    upload.single("file"),
-    async (req, res) => {
-        try {
-            if (!req.file) {
-                return res.status(400).json({
-                    success: false,
-                    message: "No file selected."
-                });
-            }
+  "/admin/reject/:id",
+  requireAdmin,
+  (req, res) => {
+    const id = Number(req.params.id);
 
-            const username =
-                req.session.user.username;
+    const user = users.find(
+      (u) => u.id === id
+    );
 
-            const key =
-                `users/${username}/${Date.now()}-${req.file.originalname}`;
-
-            await s3.send(
-                new PutObjectCommand({
-                    Bucket: BUCKET_NAME,
-                    Key: key,
-                    Body: req.file.buffer,
-                    ContentType: req.file.mimetype
-                })
-            );
-
-            activities.push({
-                username,
-                action:
-                    `File Uploaded: ${req.file.originalname}`,
-                time: new Date().toISOString()
-            });
-
-            res.json({
-                success: true,
-                message:
-                    "File uploaded successfully."
-            });
-
-        } catch (error) {
-            console.error("Upload error:", error);
-
-            res.status(500).json({
-                success: false,
-                message: error.message
-            });
-        }
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found."
+      });
     }
+
+    user.status = "rejected";
+
+    addActivity(
+      req.session.user.username,
+      "User Rejected",
+      `Rejected user: ${user.username}`
+    );
+
+    res.json({
+      success: true,
+      message: "User rejected successfully."
+    });
+  }
 );
 
-// ======================================================
-// LIST FILES
-// ======================================================
+/* =========================
+   UPLOAD TO S3
+========================= */
+
+app.post(
+  "/upload",
+  requireLogin,
+  upload.single("file"),
+  async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: "No file selected."
+        });
+      }
+
+      const username =
+        req.session.user.username;
+
+      const key =
+        `users/${username}/${req.file.originalname}`;
+
+      await s3.send(
+        new PutObjectCommand({
+          Bucket: BUCKET_NAME,
+          Key: key,
+          Body: req.file.buffer,
+          ContentType:
+            req.file.mimetype ||
+            "application/octet-stream"
+        })
+      );
+
+      addActivity(
+        username,
+        "Upload",
+        req.file.originalname
+      );
+
+      res.json({
+        success: true,
+        message: "File uploaded successfully.",
+        file: req.file.originalname
+      });
+    } catch (error) {
+      console.error("UPLOAD ERROR:", error);
+
+      res.status(500).json({
+        success: false,
+        message: "Upload failed.",
+        error: error.message
+      });
+    }
+  }
+);
+
+/* =========================
+   LIST FILES
+========================= */
 
 app.get(
-    "/files",
-    requireLogin,
-    async (req, res) => {
-        try {
-            const currentUser =
-                req.session.user;
+  "/files",
+  requireLogin,
+  async (req, res) => {
+    try {
+      const username =
+        req.session.user.username;
 
-            let prefix = "users/";
+      const isAdmin =
+        req.session.user.role === "admin";
 
-            if (currentUser.role !== "admin") {
-                prefix =
-                    `users/${currentUser.username}/`;
-            }
+      const prefix = isAdmin
+        ? "users/"
+        : `users/${username}/`;
 
-            const result =
-                await s3.send(
-                    new ListObjectsV2Command({
-                        Bucket: BUCKET_NAME,
-                        Prefix: prefix
-                    })
-                );
+      const result = await s3.send(
+        new ListObjectsV2Command({
+          Bucket: BUCKET_NAME,
+          Prefix: prefix
+        })
+      );
 
-            const objects =
-                result.Contents || [];
+      const files = (result.Contents || [])
+        .filter((item) => item.Key)
+        .map((item) => ({
+          key: item.Key,
+          name: item.Key.split("/").pop(),
+          size: item.Size || 0,
+          lastModified:
+            item.LastModified || null
+        }));
 
-            const files = objects.map(obj => {
-                const parts =
-                    obj.Key.split("/");
+      res.json({
+        success: true,
+        files
+      });
+    } catch (error) {
+      console.error("FILES ERROR:", error);
 
-                const owner =
-                    parts[1] || "";
-
-                return {
-                    name:
-                        parts.slice(2).join("/") ||
-                        obj.Key,
-
-                    key: obj.Key,
-
-                    owner,
-
-                    size:
-                        obj.Size || 0,
-
-                    lastModified:
-                        obj.LastModified
-                };
-            });
-
-            res.json({
-                success: true,
-                files
-            });
-
-        } catch (error) {
-            console.error(
-                "List files error:",
-                error
-            );
-
-            res.status(500).json({
-                success: false,
-                message: error.message,
-                files: []
-            });
-        }
+      res.status(500).json({
+        success: false,
+        message: "Unable to load files.",
+        error: error.message
+      });
     }
+  }
 );
 
-// ======================================================
-// DOWNLOAD
-// ======================================================
+/* =========================
+   DOWNLOAD
+========================= */
 
 app.get(
-    "/download",
-    requireLogin,
-    async (req, res) => {
-        try {
-            const requestedKey =
-                String(req.query.key || "");
+  "/download",
+  requireLogin,
+  async (req, res) => {
+    try {
+      const key = String(
+        req.query.key || ""
+      );
 
-            if (!requestedKey) {
-                return res.status(400).send(
-                    "File key is required."
-                );
-            }
+      if (!key) {
+        return res.status(400).json({
+          success: false,
+          message: "File key required."
+        });
+      }
 
-            const currentUser =
-                req.session.user;
+      const username =
+        req.session.user.username;
 
-            const allowedPrefix =
-                `users/${currentUser.username}/`;
+      const isAdmin =
+        req.session.user.role === "admin";
 
-            if (
-                currentUser.role !== "admin" &&
-                !requestedKey.startsWith(
-                    allowedPrefix
-                )
-            ) {
-                return res.status(403).send(
-                    "Access denied."
-                );
-            }
+      if (
+        !isAdmin &&
+        !key.startsWith(`users/${username}/`)
+      ) {
+        return res.status(403).json({
+          success: false,
+          message: "Access denied."
+        });
+      }
 
-            const result =
-                await s3.send(
-                    new GetObjectCommand({
-                        Bucket: BUCKET_NAME,
-                        Key: requestedKey
-                    })
-                );
+      const result = await s3.send(
+        new GetObjectCommand({
+          Bucket: BUCKET_NAME,
+          Key: key
+        })
+      );
 
-            const filename =
-                requestedKey.split("/").pop() ||
-                "download";
+      const filename =
+        key.split("/").pop();
 
-            res.setHeader(
-                "Content-Disposition",
-                `attachment; filename="${filename}"`
-            );
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${filename}"`
+      );
 
-            if (result.ContentType) {
-                res.setHeader(
-                    "Content-Type",
-                    result.ContentType
-                );
-            }
+      if (result.ContentType) {
+        res.setHeader(
+          "Content-Type",
+          result.ContentType
+        );
+      }
 
-            result.Body.pipe(res);
+      result.Body.pipe(res);
 
-            activities.push({
-                username:
-                    currentUser.username,
+      addActivity(
+        username,
+        "Download",
+        filename
+      );
+    } catch (error) {
+      console.error("DOWNLOAD ERROR:", error);
 
-                action:
-                    `File Downloaded: ${filename}`,
-
-                time:
-                    new Date().toISOString()
-            });
-
-        } catch (error) {
-            console.error(
-                "Download error:",
-                error
-            );
-
-            res.status(500).send(
-                "Download failed."
-            );
-        }
+      res.status(500).json({
+        success: false,
+        message: "Download failed.",
+        error: error.message
+      });
     }
+  }
 );
 
-// ======================================================
-// DELETE
-// ======================================================
+/* =========================
+   DELETE
+========================= */
 
 app.delete(
-    "/delete",
-    requireLogin,
-    async (req, res) => {
-        try {
-            const requestedKey =
-                String(req.query.key || "");
+  "/delete",
+  requireLogin,
+  async (req, res) => {
+    try {
+      const key = String(
+        req.query.key || ""
+      );
 
-            if (!requestedKey) {
-                return res.status(400).json({
-                    success: false,
-                    message:
-                        "File key is required."
-                });
-            }
+      if (!key) {
+        return res.status(400).json({
+          success: false,
+          message: "File key required."
+        });
+      }
 
-            const currentUser =
-                req.session.user;
+      const username =
+        req.session.user.username;
 
-            const allowedPrefix =
-                `users/${currentUser.username}/`;
+      const isAdmin =
+        req.session.user.role === "admin";
 
-            if (
-                currentUser.role !== "admin" &&
-                !requestedKey.startsWith(
-                    allowedPrefix
-                )
-            ) {
-                return res.status(403).json({
-                    success: false,
-                    message: "Access denied."
-                });
-            }
+      if (
+        !isAdmin &&
+        !key.startsWith(`users/${username}/`)
+      ) {
+        return res.status(403).json({
+          success: false,
+          message: "Access denied."
+        });
+      }
 
-            await s3.send(
-                new DeleteObjectCommand({
-                    Bucket: BUCKET_NAME,
-                    Key: requestedKey
-                })
-            );
+      await s3.send(
+        new DeleteObjectCommand({
+          Bucket: BUCKET_NAME,
+          Key: key
+        })
+      );
 
-            const filename =
-                requestedKey.split("/").pop() ||
-                "file";
+      const filename =
+        key.split("/").pop();
 
-            activities.push({
-                username:
-                    currentUser.username,
+      addActivity(
+        username,
+        "Delete",
+        filename
+      );
 
-                action:
-                    `File Deleted: ${filename}`,
+      res.json({
+        success: true,
+        message: "File deleted successfully."
+      });
+    } catch (error) {
+      console.error("DELETE ERROR:", error);
 
-                time:
-                    new Date().toISOString()
-            });
-
-            res.json({
-                success: true,
-                message:
-                    "File deleted successfully."
-            });
-
-        } catch (error) {
-            console.error(
-                "Delete error:",
-                error
-            );
-
-            res.status(500).json({
-                success: false,
-                message: error.message
-            });
-        }
+      res.status(500).json({
+        success: false,
+        message: "Delete failed.",
+        error: error.message
+      });
     }
+  }
 );
 
-// ======================================================
-// ACTIVITY
-// ======================================================
+/* =========================
+   ACTIVITY
+========================= */
 
 app.get(
-    "/activity",
-    requireLogin,
-    (req, res) => {
-        const currentUser =
-            req.session.user;
+  "/activity",
+  requireLogin,
+  (req, res) => {
+    const username =
+      req.session.user.username;
 
-        if (currentUser.role === "admin") {
-            return res.json({
-                success: true,
-                activities
-            });
-        }
+    const isAdmin =
+      req.session.user.role === "admin";
 
-        const userActivities =
-            activities.filter(
-                activity =>
-                    activity.username ===
-                    currentUser.username &&
-                    (
-                        activity.action.startsWith(
-                            "User Login"
-                        ) ||
-                        activity.action.startsWith(
-                            "File Uploaded"
-                        ) ||
-                        activity.action.startsWith(
-                            "File Downloaded"
-                        ) ||
-                        activity.action.startsWith(
-                            "File Deleted"
-                        )
-                    )
-            );
+    let result;
 
-        res.json({
-            success: true,
-            activities:
-                userActivities
-        });
+    if (isAdmin) {
+      result = activities;
+    } else {
+      result = activities.filter(
+        (item) =>
+          item.username === username
+      );
     }
+
+    res.json({
+      success: true,
+      activities: result
+    });
+  }
 );
 
-// ======================================================
-// STATIC FILES
-// ======================================================
+/* =========================
+   STATIC FILES
+========================= */
 
 app.use(
-    express.static(__dirname)
+  express.static(__dirname)
 );
 
-// ======================================================
-// START SERVER
-// ======================================================
+/* =========================
+   404
+========================= */
 
-app.listen(
-    PORT,
-    HOST,
-    () => {
-        console.log(
-            `Secure Cloud Access running at http://${HOST}:${PORT}`
-        );
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: "Route not found."
+  });
+});
 
-        console.log(
-            "AWS Region:",
-            AWS_REGION
-        );
+/* =========================
+   SERVER
+========================= */
 
-        console.log(
-            "S3 Bucket:",
-            BUCKET_NAME
-        );
+app.listen(PORT, HOST, () => {
+  console.log(
+    `Secure Cloud Access running at http://${HOST}:${PORT}`
+  );
 
-        console.log(
-            "GET /logout route enabled"
-        );
-    }
-);
+  console.log(
+    `AWS Region: ${AWS_REGION}`
+  );
+
+  console.log(
+    `S3 Bucket: ${BUCKET_NAME}`
+  );
+
+  console.log(
+    "GET /logout route enabled"
+  );
+});
